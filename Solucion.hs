@@ -1,4 +1,5 @@
 module Solucion where
+import qualified Data.Set as Set
 
 
 -- Completar con los datos del grupo
@@ -59,6 +60,14 @@ listaContenidaEnOtra [] _ = True
 listaContenidaEnOtra lista1 lista2 | pertenece (head lista1) lista2 = listaContenidaEnOtra (tail lista1) lista2
                                    | otherwise = False
 
+quitarElem :: Eq a => a -> [a] -> [a]
+quitarElem _ [] = []
+quitarElem elem lista | elem == (head lista) = quitarElem elem (tail lista)
+                      | otherwise = (head lista):quitarElem elem (tail lista)
+
+quitarElems :: Eq a => [a] -> [a] -> [a]
+quitarElems [] lista2 = lista2
+quitarElems lista1 lista2 = quitarElems (tail lista1) (quitarElem (head lista1) lista2)
 
 -- Ejercicios
 
@@ -78,8 +87,7 @@ amigosDe (usuarios, r, p) usuario | fst (head r) == usuario = (snd (head r)):ami
 -- describir qué hace la función: Devuelve la cantidad de relaciones del Usuario en la RedSocial
 cantidadDeAmigos :: RedSocial -> Usuario -> Int
 cantidadDeAmigos (_, [], _) _ = 0
-cantidadDeAmigos (usuarios, rel, p) usuario | fst (head rel) == usuario = 1 + (cantidadDeAmigos (usuarios, (tail rel), p) usuario)
-                                            | snd (head rel) == usuario = 1 + (cantidadDeAmigos (usuarios, (tail rel), p) usuario)
+cantidadDeAmigos (usuarios, rel, p) usuario | fst (head rel) == usuario || snd (head rel) == usuario = 1 + (cantidadDeAmigos (usuarios, (tail rel), p) usuario)
                                             | otherwise = cantidadDeAmigos (usuarios, (tail rel), p) usuario
 
 -- describir qué hace la función: Devuelve el usuario con más relaciones en la RedSocial dada
@@ -128,11 +136,36 @@ estaEnTodasLasPub pub usuario | pertenece usuario (likesDePublicacion(head pub))
 
 
 -- describir qué hace la función: .....
+
+existeSecuenciaDeAmigosAux :: RedSocial -> [Usuario] -> [[Usuario]] -> Usuario -> [(Usuario, Usuario)] -> Bool
+existeSecuenciaDeAmigosAux _ _ [] _  _ = False
+existeSecuenciaDeAmigosAux (u, r, p) [] (l:lista) u2 noRepetir = existeSecuenciaDeAmigosAux (u, r, p) u lista u2 noRepetir
+existeSecuenciaDeAmigosAux (u, r, p) (us:usuarios) (l:lista) u2 noRepetir | us == u2 && not ( pertenece us l ) && lPerteneceARelacion = True -- Encuentra cadena
+                                                                          | lPerteneceAnoRepetir = existeSecuenciaDeAmigosAux (u, r, p) usuarios (l:lista) u2 noRepetir
+                                                                          | not (pertenece us l) && lPerteneceARelacion = 
+                                                                            existeSecuenciaDeAmigosAux (u, r, p) usuarios ( agregarCasos ++ lista ) u2 ( ( us, head ( reverse l ) ):noRepetir)
+                                                                          | otherwise = existeSecuenciaDeAmigosAux (u, r, p) usuarios ( l:lista ) u2 noRepetir
+                                                                           where lPerteneceARelacion = pertenece ( us, head ( reverse l ) ) r || pertenece ( head ( reverse l ), us ) r
+                                                                                 lPerteneceAnoRepetir = pertenece ( us, head ( reverse l ) ) noRepetir || pertenece ( head ( reverse l ), us ) noRepetir
+                                                                                 agregarCasos = createListOfN2 ((lengthOfList u) - (lengthOfList l)) (l ++ [us])
+
+
+
+
 existeSecuenciaDeAmigos :: RedSocial -> Usuario -> Usuario -> Bool
-existeSecuenciaDeAmigos (u, r, p) usuario1 usuario2
-
-
-
-
+existeSecuenciaDeAmigos (u, r, p) u1 u2 =  existeSecuenciaDeAmigosAux (u, r, p) u ( createListOfN ( ( lengthOfList u ) - 1 ) u1 ) u2 []
 
 -----------------
+
+
+createListOfN :: Eq a => Int -> a -> [[a]]
+createListOfN 0 _ = []
+createListOfN a b = [b]:createListOfN (a-1) b
+
+createListOfN2 :: Eq a => Int -> a -> [a]
+createListOfN2 0 _ = []
+createListOfN2 a b = b:createListOfN2 (a-1) b
+
+lengthOfList :: Eq a => [a] -> Int
+lengthOfList [] = 0
+lengthOfList list = 1 + lengthOfList (tail (list))
